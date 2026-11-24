@@ -954,6 +954,40 @@ function texToAscii(src, opts) {
     { l: '↵', act: 'enter', c: 'enter', a: 'calcular', svg: '<path d="M20 5v6a4 4 0 0 1-4 4H5"/><path d="m9 11-4 4 4 4"/>' }
   ];
 
+  // ---- Teclado de MathLive (celulares y tabletas). Se conservan sus pestañas de siempre
+  //      (123, símbolos, abc, griego) y se suma una pestaña f(x) con funciones y las teclas de cada modo.
+  function vkFn(name) {
+    return { latex: '\\' + name, insert: '\\' + name + '\\left(#?\\right)', class: 'small' };
+  }
+  function vkExtra(k) {
+    if (k.tex) return { latex: k.tex, class: 'small' };
+    if (k.s === '!') return { latex: k.face, insert: '!' };
+    return { latex: k.s };
+  }
+  function vkLayouts(op) {
+    var extras = (EXTRA[MODES[op].extra] || []).map(vkExtra);
+    var row3 = extras.concat(['[(]', '[)]']);
+    for (var i = row3.length; i < 9; i++) row3.push('[separator]');
+    row3.push({ label: '[backspace]', width: 1 });
+    var fx = {
+      id: 'fx-' + op,
+      label: 'f(x)', labelClass: 'MLK__tex-math', tooltip: 'Funciones',
+      rows: [
+        [vkFn('sin'), vkFn('cos'), vkFn('tan'), vkFn('cot'), vkFn('sec'), vkFn('csc'),
+          vkFn('log'), vkFn('ln'),
+          { latex: '\\log_{a}', insert: '\\log_{#?}\\left(#?\\right)', class: 'small' },
+          { latex: 'e^{x}', insert: 'e^{#?}' }],
+        ['[separator-5]', vkFn('arcsin'), vkFn('arccos'), vkFn('arctan'), vkFn('sinh'), vkFn('cosh'), vkFn('tanh'),
+          { latex: '\\left|x\\right|', insert: '\\left|#0\\right|' },
+          { latex: '\\sqrt[n]{x}', insert: '\\sqrt[#?]{#0}' },
+          { latex: '\\infty' }, '[separator-5]'],
+        row3,
+        ['[separator-50]', '[separator-20]', '[left]', '[right]', { label: '[action]', width: 1 }]
+      ]
+    };
+    return ['numeric', fx, 'symbols', 'alphabetic', 'greek'];
+  }
+
   var $ = function (id) { return document.getElementById(id); };
   var form = $('calc'), order = $('order'), sideSel = $('side');
   var go = $('go'), result = $('result'), mathIn = $('math-in'), mathOut = $('math-out');
@@ -963,6 +997,7 @@ function texToAscii(src, opts) {
   var copyText = '';
   var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var editor = false;      // true cuando el editor matemático está activo
+  var useVK = false;       // true en pantallas táctiles: se usa el teclado propio de MathLive en vez del panel de la página
   var mode = 'diff';
   var lastBounds = null, lastOrder = null;   // para saber cuándo hay que volver a los valores por defecto
 
@@ -978,7 +1013,8 @@ function texToAscii(src, opts) {
     var mf = document.createElement('math-field');
     var self = this;
     mf.setAttribute('aria-label', this.input.getAttribute('aria-label') || 'Expresión');
-    mf.setAttribute('math-virtual-keyboard-policy', 'manual');
+    // Táctil: el teclado de MathLive aparece solo al tocar el campo. Con mouse: el panel de la página.
+    mf.setAttribute('math-virtual-keyboard-policy', useVK ? 'auto' : 'manual');
     mf.setAttribute('tabindex', '0');
     try { mf.menuItems = []; } catch (e) { /* sin menú contextual */ }
     mf.addEventListener('keydown', function (e) {
@@ -1072,6 +1108,9 @@ function texToAscii(src, opts) {
     $('opts').hidden = !(m.order || m.from || m.to || m.side);
     buildKeys();
     buildChips();
+    if (useVK) {
+      try { window.mathVirtualKeyboard.layouts = vkLayouts(op); } catch (e) { /* queda el teclado por defecto */ }
+    }
   }
 
   form.addEventListener('change', function (e) {
@@ -1228,10 +1267,27 @@ function texToAscii(src, opts) {
     if (window.customElements && customElements.get('math-field') && window.MathfieldElement) {
       try {
         var ME = window.MathfieldElement;
+        useVK = coarse && !!window.mathVirtualKeyboard;
         ME.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive@0.110.0/fonts';
         ME.soundsDirectory = null;
         fields.forEach(function (f) { f.upgrade(); });
         editor = true;
+        if (useVK) {
+          pad.hidden = true;
+          // El teclado tapa la parte de abajo: la página se desplaza para dejar el campo a la vista.
+          window.mathVirtualKeyboard.addEventListener('geometrychange', function () {
+            var f = current(), kb = window.mathVirtualKeyboard.boundingRect.height;
+            if (!f || !f.mf || !kb || !f.mf.hasFocus()) return;
+            var r = f.mf.getBoundingClientRect(), room = window.innerHeight - kb;
+            if (r.bottom > room - 16 || r.top < 8) {
+              window.scrollBy({ top: r.bottom - room + 24, behavior: 'smooth' });
+            }
+          });
+          // La tecla de acción (↵) del teclado de MathLive confirma el campo: eso calcula.
+          fields.forEach(function (f) {
+            f.mf.addEventListener('change', function () { if (f.mf.hasFocus()) form.requestSubmit(); });
+          });
+        }
         // Que escribir `log(x)` con el teclado no abra una base vacía, y que `sen` y `tg` funcionen.
         var extra = {
           log: '\\log', sen: '\\sin', tg: '\\tan', ctg: '\\cot', cosec: '\\csc',
@@ -1243,13 +1299,15 @@ function texToAscii(src, opts) {
         });
       } catch (e) {
         editor = false;
+        useVK = false;
+        pad.hidden = false;
         fields.forEach(function (f) {
           if (f.mf) { f.mf.remove(); f.mf = null; f.el = f.input; f.input.hidden = false; }
         });
       }
     }
     $('help-text').hidden = editor;
-    $('pad-hint').hidden = !editor;
+    $('pad-hint').hidden = !editor || useVK;
     if (!editor) {
       fields.forEach(function (f) {
         f.input.setAttribute('inputmode', coarse && pad.open ? 'none' : 'text');
