@@ -1,0 +1,1487 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Calculadora matemática</title>
+<meta name="description" content="Calculadora matemática online: derivadas, integrales, límites, series de Taylor, sumatorias, ecuaciones y álgebra, con paso a paso.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathlive@0.110.0/mathlive.min.js"></script>
+<style>
+  /* Hoja cuadriculada, birome azul. */
+  :root {
+    --paper: #f6f8fc;
+    --grid: #dde5f1;
+    --rule: #b9c4d8;
+    --field: #ffffff;
+    --text: #1f242d;
+    --muted: #586174;
+    --ink: #1d3fb8;
+    --on-ink: #ffffff;
+    --red: #b3261e;
+    --sans: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0f1626;
+      --grid: #1a2540;
+      --rule: #33415f;
+      --field: #141d33;
+      --text: #e8edf7;
+      --muted: #9aa6bd;
+      --ink: #94b4ff;
+      --on-ink: #0f1626;
+      --red: #ff9a92;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  [hidden] { display: none !important; }
+
+  body {
+    margin: 0;
+    font: 400 1.0625rem/1.55 var(--sans);
+    color: var(--text);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  main {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 6vw, 4.5rem) 1rem 4rem;
+  }
+
+  h1 {
+    margin: 0 0 0.6rem;
+    font-size: clamp(2.25rem, 8vw, 3.9rem);
+    line-height: 1;
+    letter-spacing: -0.035em;
+    font-weight: 700;
+  }
+  .lead { margin: 0 0 2.25rem; max-width: 32rem; color: var(--muted); }
+
+  fieldset { margin: 0 0 1.25rem; padding: 0; border: 0; min-width: 0; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  summary { cursor: pointer; font-weight: 600; }
+  summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  code { font: 500 0.95em var(--mono); }
+
+  /* Selector de operación: dos grupos de pestañas, como el índice de un cuaderno */
+  .ops { display: grid; gap: 0.55rem; margin: 0 0 0.6rem; }
+  .ops-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+  .ops-name { flex: 0 0 100%; margin: 0.15rem 0 0; color: var(--muted); font-size: 0.9rem; }
+  .pill { position: relative; display: inline-flex; }
+  .pill input {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    margin: 0; opacity: 0; cursor: pointer;
+  }
+  .pill label {
+    display: inline-flex; align-items: center; min-height: 2.6rem;
+    padding: 0.4rem 0.68rem;
+    font: 600 0.95rem/1.2 var(--sans); color: var(--text);
+    background: var(--field); border: 1.5px solid var(--muted); border-radius: 8px;
+    pointer-events: none;
+  }
+  .pill input:hover + label { border-color: var(--ink); }
+  .pill input:checked + label { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+  .pill input:focus-visible + label { outline: 3px solid var(--text); outline-offset: 2px; }
+  .mode-hint { margin: 0 0 1.1rem; min-height: 1.55em; color: var(--muted); font-size: 0.95rem; }
+
+  /* Función */
+  .fx {
+    display: flex; align-items: center; gap: 0.75rem;
+    min-height: 4.2rem;
+    margin: 0 0 1rem; padding: 0.3rem 0.9rem;
+    background: var(--field);
+    border: 1.5px solid var(--text);
+    border-radius: 10px;
+  }
+  .fx:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .fx > span { font: 500 1.2rem var(--mono); color: var(--muted); white-space: nowrap; }
+  .fx input {
+    flex: 1; min-width: 0; padding: 0.6rem 0;
+    font: 500 1.35rem var(--mono); color: var(--text);
+    background: transparent; border: 0; outline: 0;
+  }
+
+  /* Campo matemático (MathLive) */
+  math-field {
+    display: block; min-width: 0;
+    color: var(--text);
+    background: transparent;
+    border: 0; outline: 0;
+    --caret-color: var(--ink);
+    --selection-background-color: color-mix(in srgb, var(--ink) 26%, transparent);
+    --selection-color: var(--text);
+    --placeholder-color: var(--muted);
+    --placeholder-opacity: 0.55;
+    --smart-fence-color: var(--muted);
+    --smart-fence-opacity: 0.8;
+    --contains-highlight-background-color: color-mix(in srgb, var(--ink) 13%, transparent);
+  }
+  math-field:focus, math-field:focus-within { outline: 0; }
+  math-field::part(menu-toggle),
+  math-field::part(virtual-keyboard-toggle) { display: none; }
+  .fx math-field { flex: 1; font-size: 1.7rem; }
+  .opt math-field {
+    width: 9.5rem; min-height: 2.6rem;
+    font-size: 1.25rem;
+    background: var(--field); border: 1.5px solid var(--text); border-radius: 8px;
+  }
+  .opt math-field:focus-within { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  /* Teclado matemático */
+  .pad { margin: 0 0 1.25rem; }
+  .pad > summary { margin: 0 0 0.6rem; }
+  .keys { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.4rem; }
+  .key {
+    min-height: 2.75rem; padding: 0.3rem 0;
+    font: 500 1.05rem var(--mono); color: var(--text);
+    background: var(--field); border: 1.5px solid var(--muted); border-radius: 8px;
+    cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .key:hover { border-color: var(--ink); }
+  .key:active { background: var(--grid); }
+  .key:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .key:disabled { opacity: 0.32; cursor: not-allowed; }
+  .key:disabled:hover { border-color: var(--muted); }
+  .key .katex { font-size: 1.2em; }
+  .key * { pointer-events: none; }   /* el dibujo de KaTeX se pasa del botón: que el clic siempre llegue al botón */
+  .key.fn { color: var(--ink); }
+  .key.fn.plain { font-size: 0.8rem; }
+  .key > svg { width: 1.35rem; height: 1.35rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .key > svg .solid { fill: currentColor; stroke: none; }
+  .key.ctl { color: var(--red); }
+  .key.op { font-size: 1.35rem; }
+  .key.enter { color: var(--on-ink); background: var(--ink); border-color: var(--ink); font-weight: 700; font-size: 1.3rem; }
+  .key.extra { color: var(--ink); border-color: var(--ink); font-size: 1.15rem; }
+  .pad-hint { margin: 0.6rem 0 0; font-size: 0.9rem; color: var(--muted); }
+
+  /* Límites y orden */
+  .opts { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; margin: 0 0 1.5rem; }
+  .opt { display: inline-flex; align-items: center; gap: 0.6rem; font-weight: 600; }
+  .opt input {
+    width: 7.5rem; padding: 0.5rem 0.7rem;
+    font: 500 1.05rem var(--mono); color: var(--text);
+    background: var(--field); border: 1.5px solid var(--text); border-radius: 8px;
+  }
+  .opt input[type="number"] { width: 4.75rem; }
+  .opt input:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .opt select {
+    padding: 0.5rem 0.6rem;
+    font: 500 1rem var(--sans); color: var(--text);
+    background: var(--field); border: 1.5px solid var(--text); border-radius: 8px;
+  }
+  .opt select:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .go {
+    padding: 0.8rem 1.8rem;
+    font: 700 1.1rem var(--sans); color: var(--on-ink);
+    background: var(--ink); border: 0; border-radius: 10px; cursor: pointer;
+  }
+  .go:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .go:disabled { opacity: 0.6; cursor: progress; }
+
+  /* Resultado */
+  .result { margin-top: 2rem; padding-top: 1rem; border-top: 2px solid var(--ink); }
+  .math { overflow-x: auto; overflow-y: hidden; padding: 0.25rem 0; }
+  .math .katex-display { margin: 0.3em 0; text-align: left; }
+  .math .katex-display > .katex { text-align: left; }
+  .math-in { font-size: 1.3rem; color: var(--muted); }
+  .math-out { font-size: 1.75rem; color: var(--ink); }
+  .note { margin: 0.5rem 0 0; color: var(--muted); }
+  .copy {
+    margin-top: 0.9rem; padding: 0.45rem 0.9rem;
+    font: 600 0.95rem var(--sans); color: var(--ink);
+    background: transparent; border: 1.5px solid var(--ink); border-radius: 8px; cursor: pointer;
+  }
+  .copy:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .err {
+    margin: 0; padding: 0.8rem 1rem;
+    background: var(--field);
+    border-left: 4px solid var(--red);
+  }
+
+  /* Paso a paso */
+  .steps { margin: 1.25rem 0 0; }
+  .steps > summary { color: var(--ink); }
+  .steps-list { margin: 0.9rem 0 0; padding: 0; list-style: none; counter-reset: paso; }
+  .step {
+    margin: 0 0 0.35rem calc(var(--depth, 0) * 1.1rem);
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--rule);
+  }
+  .step.top { margin-top: 1.1rem; border-left-color: var(--ink); counter-increment: paso; }
+  .steps-list > .step.top:first-child { margin-top: 0; }
+  .step-text { margin: 0; font-size: 1rem; }
+  .step.top .step-text { font-weight: 600; }
+  .step.top .step-text::before { content: counter(paso) ". "; color: var(--ink); font-weight: 700; }
+  .step-math { overflow-x: auto; overflow-y: hidden; font-size: 1.05rem; }
+  .step-math .katex-display { margin: 0.2em 0 0.3em; text-align: left; }
+  .step-math .katex-display > .katex { text-align: left; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .result.fresh { animation: write 0.35s ease-out; }
+    @keyframes write { from { opacity: 0; } to { opacity: 1; } }
+  }
+
+  /* Ejemplos, ayuda y pie */
+  .examples { margin: 2rem 0 0; }
+  .examples p { margin: 0 0 0.6rem; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.85rem;
+    font: 400 0.95rem var(--sans); color: var(--text);
+    background: var(--field); border: 1.5px solid var(--muted); border-radius: 999px; cursor: pointer;
+  }
+  .chip code { font: 500 0.9rem var(--mono); color: var(--ink); }
+  .chip .katex { font-size: 1.05em; color: var(--ink); }
+  .chip:hover { border-color: var(--ink); }
+  .chip:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .help { margin: 2.5rem 0 0; }
+  .help ul { margin: 0.75rem 0 0; padding-left: 1.2rem; }
+  .help li { margin: 0.25rem 0; }
+  .help .sub { margin: 1rem 0 0; font-weight: 600; }
+  .foot { margin: 2rem 0 0; font-size: 0.9rem; color: var(--muted); max-width: 36rem; }
+
+  @media (max-width: 30rem) {
+    .ops-name { flex-basis: 100%; }
+    .pill label { padding: 0.4rem 0.65rem; font-size: 0.92rem; }
+    .fx { padding: 0.3rem 0.7rem; gap: 0.5rem; }
+    .fx > span { font-size: 1rem; }
+    .fx input { font-size: 1.15rem; }
+    .fx math-field { font-size: 1.5rem; }
+    .opt math-field { width: 7.75rem; }
+    .math-out { font-size: 1.45rem; }
+    .keys { gap: 0.3rem; }
+    .key { min-height: 2.6rem; }
+    .key .katex { font-size: 1.02em; }
+    .key.long .katex { font-size: 0.86em; }
+    .key.fn.plain { font-size: 0.74rem; }
+    .step { margin-left: calc(var(--depth, 0) * 0.55rem); }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Calculadora matemática</h1>
+  <p class="lead">Derivadas, integrales, límites, ecuaciones y más. Escribí la expresión como en el cuaderno y el resultado sale con su paso a paso.</p>
+
+  <form id="calc" autocomplete="off" novalidate>
+    <fieldset class="ops">
+      <legend class="sr-only">Qué querés calcular</legend>
+      <div class="ops-group">
+        <span class="ops-name">Cálculo</span>
+        <div class="pill"><input type="radio" name="op" id="op-diff" value="diff" checked><label for="op-diff">Derivada</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-int" value="int"><label for="op-int">Integral indefinida</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-defint" value="defint"><label for="op-defint">Integral definida</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-limit" value="limit"><label for="op-limit">Límite</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-taylor" value="taylor"><label for="op-taylor">Taylor</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-sum" value="sum"><label for="op-sum">Sumatoria</label></div>
+      </div>
+      <div class="ops-group">
+        <span class="ops-name">Álgebra</span>
+        <div class="pill"><input type="radio" name="op" id="op-simplify" value="simplify"><label for="op-simplify">Simplificar</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-expand" value="expand"><label for="op-expand">Expandir</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-factor" value="factor"><label for="op-factor">Factorizar</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-apart" value="apart"><label for="op-apart">Fracciones parciales</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-solve" value="solve"><label for="op-solve">Resolver</label></div>
+        <div class="pill"><input type="radio" name="op" id="op-eval" value="eval"><label for="op-eval">Evaluar</label></div>
+      </div>
+    </fieldset>
+    <p class="mode-hint" id="mode-hint"></p>
+
+    <div class="fx">
+      <span aria-hidden="true" id="fx-label">f(x) =</span>
+      <input id="expr" type="text" aria-label="Función de x" placeholder="x^2*sin(x)"
+             autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="200" required>
+    </div>
+
+    <details class="pad" id="pad" open>
+      <summary>Teclado matemático</summary>
+      <div class="keys" id="keys" role="group" aria-label="Teclas matemáticas"></div>
+      <p class="pad-hint" id="pad-hint" hidden>Para poner un exponente tocá ▴ después de un número, de una letra o de un paréntesis. Después de un exponente, una fracción o una raíz, tocá la flecha derecha del teclado para salir de ahí y seguir escribiendo.</p>
+    </details>
+
+    <div class="opts" id="opts">
+      <label class="opt" id="order-wrap"><span id="order-name">Orden</span>
+        <input id="order" type="number" min="1" max="5" step="1" value="1" inputmode="numeric">
+      </label>
+      <label class="opt" id="from-wrap" hidden><span id="from-name">Desde</span>
+        <input id="from" type="text" value="0" aria-label="Límite inferior" autocapitalize="off" spellcheck="false" maxlength="60">
+      </label>
+      <label class="opt" id="to-wrap" hidden><span id="to-name">Hasta</span>
+        <input id="to" type="text" value="1" aria-label="Límite superior" autocapitalize="off" spellcheck="false" maxlength="60">
+      </label>
+      <label class="opt" id="side-wrap" hidden><span>Acercándose</span>
+        <select id="side">
+          <option value="both">por los dos lados</option>
+          <option value="+">por la derecha</option>
+          <option value="-">por la izquierda</option>
+        </select>
+      </label>
+    </div>
+
+    <button class="go" id="go" type="submit">Calcular</button>
+  </form>
+
+  <section class="result" id="result" aria-live="polite" hidden>
+    <div class="math math-in" id="math-in"></div>
+    <div class="math math-out" id="math-out"></div>
+    <p class="err" id="err" role="alert" hidden></p>
+    <p class="note" id="note" hidden></p>
+    <button class="copy" id="copy" type="button" hidden>Copiar resultado</button>
+    <details class="steps" id="steps" hidden>
+      <summary>Ver paso a paso</summary>
+      <ol class="steps-list" id="steps-list"></ol>
+    </details>
+    <p class="note" id="steps-note" hidden></p>
+  </section>
+
+  <section class="examples" aria-label="Ejemplos">
+    <p>Probá con un ejemplo:</p>
+    <ul class="chips" id="chips"></ul>
+  </section>
+
+  <details class="help">
+    <summary>Cómo escribir las expresiones</summary>
+    <ul>
+      <li>Tocá las teclas o usá el teclado de la computadora. La <code>/</code> arma una fracción, la <code>^</code> un exponente y <code>sqrt</code> una raíz.</li>
+      <li>Exponente: escribí un número, x o un paréntesis y tocá ▴ (o la flecha arriba de la compu). Para salir de un exponente, una fracción o una raíz, tocá la flecha derecha del teclado (o la del teclado de la compu).</li>
+      <li><strong>log</strong> es el logaritmo en base 10, <strong>ln</strong> el natural y <strong>logₐ</strong> el de cualquier base. También entiende <code>sen</code> y <code>tg</code>.</li>
+      <li>Constantes: π y e. En límites y sumatorias, ∞ es infinito (y −∞ menos infinito). Los ángulos van en radianes.</li>
+      <li><strong>Límite:</strong> «Acercándose» elige por qué lado se aproxima x. Si los lados dan distinto, el límite no existe.</li>
+      <li><strong>Taylor:</strong> el centro 0 da el desarrollo de Maclaurin. El grado va de 1 a 10.</li>
+      <li><strong>Sumatoria:</strong> la variable es n, no x. «Hasta» puede ser ∞.</li>
+      <li><strong>Resolver:</strong> escribí una ecuación (con =) o una desigualdad (&lt;, &gt;, ≤, ≥). Solo busca soluciones reales y no resuelve desigualdades con funciones trigonométricas.</li>
+      <li><strong>Evaluar:</strong> cuentas sin variables, como 1/3 + 1/4 o sen(π/6). Con decimales responde con decimales.</li>
+    </ul>
+    <div id="help-text" hidden>
+      <p class="sub">El editor matemático no se cargó, así que el campo es de texto simple:</p>
+      <ul>
+        <li>Potencias: <code>x^2</code>, <code>x^(1/3)</code></li>
+        <li>Producto: <code>2*x</code> o <code>2x</code></li>
+        <li>Funciones: <code>sin(x)</code>, <code>cos(x)</code>, <code>tan(x)</code>, <code>exp(x)</code>, <code>sqrt(x)</code>, <code>abs(x)</code></li>
+        <li>Logaritmos: <code>ln(x)</code> natural, <code>log10(x)</code> en base 10, <code>log(x, b)</code> en base b</li>
+        <li>Constantes: <code>pi</code> y <code>e</code>. Infinito: <code>oo</code> (y <code>-oo</code> menos infinito).</li>
+        <li>Factorial: <code>n!</code>. Desigualdades: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code></li>
+      </ul>
+    </div>
+  </details>
+
+  <p class="foot">Los cálculos los hace SymPy en el servidor. Cuando no hay una fórmula exacta (una integral sin primitiva elemental, una serie sin suma conocida, una ecuación sin solución con fórmulas), el valor se aproxima numéricamente y se avisa, y entonces no hay paso a paso.</p>
+</main>
+
+<script>
+/* Convierte el LaTeX que produce el campo matemático a la sintaxis de la API.
+   Devuelve { ok: true, text } o { ok: false, error }.
+   opts.relation: permite un solo signo =, <, >, ≤ o ≥ (modo "resolver"). */
+function texToAscii(src, opts) {
+  'use strict';
+  opts = opts || {};
+
+  // Nombre que se escribe -> nombre que entiende la API.
+  var FUNCS = {
+    sin: 'sin', cos: 'cos', tan: 'tan', cot: 'cot', sec: 'sec', csc: 'csc',
+    sinh: 'sinh', cosh: 'cosh', tanh: 'tanh', exp: 'exp', ln: 'ln', log: 'log10', lg: 'log10', abs: 'abs',
+    arcsin: 'asin', arccos: 'acos', arctan: 'atan',
+    sen: 'sin', tg: 'tan', ctg: 'cot', cotg: 'cot', cosec: 'csc',
+    arcsen: 'asin', arctg: 'atan', senh: 'sinh', tgh: 'tanh'
+  };
+  var INVERSE = { sin: 'asin', cos: 'acos', tan: 'atan' };
+  var WORDS = Object.keys(FUNCS).sort(function (a, b) { return b.length - a.length; });
+  var has = Object.prototype.hasOwnProperty;
+
+  function fail(msg) { var e = new Error(msg); e.user = true; throw e; }
+
+  // ---- Tokens: cmd (\nombre), num (dígitos), let (una letra), ch (cualquier otro carácter)
+  var toks = [], i = 0, m;
+  while (i < src.length) {
+    var c = src.charAt(i);
+    if (c === '\\') {
+      m = /^\\([A-Za-z]+)/.exec(src.slice(i));
+      if (m) { toks.push({ t: 'cmd', v: m[1] }); i += m[0].length; }
+      else { toks.push({ t: 'cmd', v: src.charAt(i + 1) }); i += 2; }
+    } else if (/\s/.test(c)) {
+      i++;
+    } else if (/[0-9]/.test(c)) {
+      m = /^[0-9]+/.exec(src.slice(i)); toks.push({ t: 'num', v: m[0] }); i += m[0].length;
+    } else if (/[A-Za-z]/.test(c)) {
+      toks.push({ t: 'let', v: c }); i++;
+    } else {
+      toks.push({ t: 'ch', v: c }); i++;
+    }
+  }
+
+  var p = 0;
+  function peek(k) { return toks[p + (k || 0)]; }
+  function isCh(tok, v) { return !!tok && tok.t === 'ch' && tok.v === v; }
+  function isCmd(tok, v) { return !!tok && tok.t === 'cmd' && tok.v === v; }
+  function delim(tok) { return tok ? tok.v : ''; }
+
+  // Pone paréntesis solo si hacen falta.
+  function closesAtEnd(s, open) {
+    var d = 0;
+    for (var k = open; k < s.length; k++) {
+      if (s.charAt(k) === '(') d++;
+      else if (s.charAt(k) === ')') { d--; if (d === 0) return k === s.length - 1; }
+    }
+    return false;
+  }
+  function isWrapped(s) { return s.charAt(0) === '(' && closesAtEnd(s, 0); }
+  function isCall(s) {
+    var k = s.indexOf('(');
+    return k > 0 && /^[A-Za-z][A-Za-z0-9]*$/.test(s.slice(0, k)) && closesAtEnd(s, k);
+  }
+  function wrap(s) { return (/^[A-Za-z0-9.]+$/.test(s) || isWrapped(s) || isCall(s)) ? s : '(' + s + ')'; }
+  function force(s) { return isWrapped(s) ? s : '(' + s + ')'; }
+
+  // ---- Argumento de ^ \frac \sqrt: {…} o un solo carácter, como en TeX.
+  function arg() {
+    var tok = peek();
+    if (!tok) fail('Falta completar una parte de la expresión.');
+    if (isCh(tok, '{')) {
+      p++;
+      var s = seq(function (t) { return isCh(t, '}'); });
+      if (!isCh(peek(), '}')) fail('Falta cerrar una llave.');
+      p++;
+      if (!s) fail('Hay un recuadro vacío: completalo o borralo.');
+      return s;
+    }
+    if (tok.t === 'num') {
+      if (tok.v.length > 1) { toks[p] = { t: 'num', v: tok.v.slice(1) }; return tok.v.charAt(0); }
+      p++; return tok.v;
+    }
+    if (tok.t === 'let') { p++; return tok.v; }
+    return atom();
+  }
+
+  // Paréntesis: ( … ) o \left( … \right). Devuelve el contenido, o null si no hay.
+  function parenInner() {
+    var tok = peek();
+    if (isCh(tok, '(')) {
+      p++;
+      var s = seq(function (t) { return isCh(t, ')'); });
+      if (!isCh(peek(), ')')) fail('Falta cerrar un paréntesis.');
+      p++;
+      return s;
+    }
+    if (isCmd(tok, 'left') && isCh(peek(1), '(')) {
+      p += 2;
+      var s2 = seq(function (t) { return isCmd(t, 'right'); });
+      if (!isCmd(peek(), 'right') || !isCh(peek(1), ')')) fail('Falta cerrar un paréntesis.');
+      p += 2;
+      return s2;
+    }
+    return null;
+  }
+
+  function absInner() {
+    var tok = peek(), s;
+    if (isCh(tok, '|')) {
+      p++;
+      s = seq(function (t) { return isCh(t, '|'); });
+      if (!isCh(peek(), '|')) fail('Falta cerrar una barra de valor absoluto.');
+      p++;
+      return s;
+    }
+    var open = isCmd(tok, 'left') && (isCh(peek(1), '|') || isCmd(peek(1), 'vert') || isCmd(peek(1), 'lvert'));
+    if (open) {
+      p += 2;
+      s = seq(function (t) { return isCmd(t, 'right'); });
+      var close = peek(1);
+      if (!isCmd(peek(), 'right') || !(isCh(close, '|') || isCmd(close, 'vert') || isCmd(close, 'rvert'))) {
+        fail('Falta cerrar una barra de valor absoluto.');
+      }
+      p += 2;
+      return s;
+    }
+    if (isCmd(tok, 'lvert')) {
+      p++;
+      s = seq(function (t) { return isCmd(t, 'rvert'); });
+      if (!isCmd(peek(), 'rvert')) fail('Falta cerrar una barra de valor absoluto.');
+      p++;
+      return s;
+    }
+    return null;
+  }
+
+  // Texto dentro de \mathrm{…} / \operatorname{…}: solo letras.
+  function wordInBraces() {
+    if (!isCh(peek(), '{')) fail('No entiendo esta parte de la expresión.');
+    p++;
+    var s = '', depth = 1;
+    while (peek() && depth > 0) {
+      var t = peek(); p++;
+      if (isCh(t, '{')) depth++;
+      else if (isCh(t, '}')) depth--;
+      else if (t.t === 'let') s += t.v;
+      else if (t.t === 'cmd' && (t.v === 'mathrm' || t.v === 'text' || t.v === 'mathit' || t.v === 'operatorname')) continue;
+      else fail('No entiendo esta parte de la expresión.');
+    }
+    if (depth !== 0) fail('Falta cerrar una llave.');
+    return s;
+  }
+
+  // ---- Un factor sin exponente: número, variable, función, fracción, raíz, grupo…
+  function atom() {
+    var tok = peek(), s;
+    if (!tok) fail('La expresión está incompleta.');
+
+    if (tok.t === 'num') {
+      p++;
+      s = tok.v;
+      var a = peek(), b = peek(1), c3 = peek(2), d4 = peek(3);
+      if (a && a.t === 'ch' && (a.v === '.' || a.v === ',') && b && b.t === 'num') { s += '.' + b.v; p += 2; }
+      else if (isCh(a, '{') && isCh(b, ',') && isCh(c3, '}') && d4 && d4.t === 'num') { s += '.' + d4.v; p += 4; }
+      return s;
+    }
+
+    if (tok.t === 'let') {
+      var word = '', q = p;
+      while (toks[q] && toks[q].t === 'let') { word += toks[q].v; q++; }
+      for (var k = 0; k < WORDS.length; k++) {
+        if (word.indexOf(WORDS[k]) === 0) { p += WORDS[k].length; return call(FUNCS[WORDS[k]]); }
+      }
+      if (word.indexOf('pi') === 0) { p += 2; return 'pi'; }
+      p++;
+      return tok.v;
+    }
+
+    if (tok.t === 'ch') {
+      if (tok.v === '^') fail('Un exponente necesita una base: escribí algo antes del exponente.');
+      if (tok.v === '.' && peek(1) && peek(1).t === 'num') { p += 2; return '0.' + toks[p - 1].v; }
+      if (tok.v === '(') return force(parenInner());
+      if (tok.v === '|') return call('abs', true);
+      if (tok.v === '{') {
+        p++;
+        s = seq(function (t) { return isCh(t, '}'); });
+        if (!isCh(peek(), '}')) fail('Falta cerrar una llave.');
+        p++;
+        return force(s);
+      }
+      fail('No entiendo el símbolo «' + tok.v + '».');
+    }
+
+    // comandos
+    var name = tok.v;
+    if (name === 'left') {
+      if (parenInner !== null && isCh(peek(1), '(')) return force(parenInner());
+      return call('abs', true);
+    }
+    if (name === 'lvert') return call('abs', true);
+    p++;
+    if (name === 'frac' || name === 'dfrac' || name === 'tfrac') {
+      var num = arg(), den = arg();
+      return '(' + wrap(num) + '/' + wrap(den) + ')';
+    }
+    if (name === 'sqrt') {
+      var idx = null;
+      if (isCh(peek(), '[')) {
+        p++;
+        idx = seq(function (t) { return isCh(t, ']'); });
+        if (!isCh(peek(), ']')) fail('Falta cerrar el índice de la raíz.');
+        p++;
+        if (!idx) fail('Hay un recuadro vacío: completalo o borralo.');
+      }
+      var rad = arg();
+      if (idx === null || idx === '2') return 'sqrt(' + rad + ')';
+      return '(' + wrap(rad) + '^(1/' + wrap(idx) + '))';
+    }
+    if (name === 'placeholder') {
+      if (isCh(peek(), '[')) { while (peek() && !isCh(peek(), ']')) p++; p++; }
+      var ph = isCh(peek(), '{') ? arg() : '';
+      if (!ph) fail('Hay un recuadro vacío: completalo o borralo.');
+      return force(ph);
+    }
+    if (name === 'mathrm' || name === 'operatorname' || name === 'text' || name === 'mathit') {
+      var word2 = wordInBraces();
+      if (word2 === 'e') return 'e';
+      if (word2 === 'pi') return 'pi';
+      if (has.call(FUNCS, word2)) return call(FUNCS[word2]);
+      fail('No reconozco «' + word2 + '».');
+    }
+    if (has.call(FUNCS, name)) return call(FUNCS[name]);
+    if (name === 'pi') return 'pi';
+    if (name === 'infty') return 'oo';
+    if (name === 'exponentialE') return 'e';
+    fail('No entiendo el símbolo «\\' + name + '».');
+  }
+
+  // ---- Factorial postfijo: n! -> factorial(n)
+  function bang(base) {
+    while (isCh(peek(), '!')) {
+      p++;
+      if (isCh(peek(), '!')) fail('El doble factorial (!!) no está disponible.');
+      base = 'factorial(' + (isWrapped(base) ? base.slice(1, -1) : base) + ')';
+    }
+    return base;
+  }
+
+  // ---- Factor con exponentes: atom^…
+  function factor() {
+    var base = bang(atom());
+    while (isCh(peek(), '^')) {
+      p++;
+      base = bang(base + '^' + wrap(arg()));
+    }
+    if (isCh(peek(), '_')) fail('Los subíndices no están permitidos acá.');
+    if (isCh(peek(), "'")) fail('No uses el apóstrofo: elegí la opción Derivada.');
+    return base;
+  }
+
+  // ---- Función: \sin x, \sin^2 x, \sin(x)^2, \log_b x
+  function call(fname, isAbs) {
+    if (isAbs) {
+      var inner = absInner();
+      if (inner === null) fail('No entiendo la barra de valor absoluto.');
+      if (!inner) fail('Hay un recuadro vacío: completalo o borralo.');
+      return 'abs(' + inner + ')';
+    }
+    var base = null, pow = null;
+    if (fname === 'log10' && isCh(peek(), '_')) {
+      p++;
+      base = arg();
+      if (!base) fail('Hay un recuadro vacío: completalo o borralo.');
+    }
+    while (isCh(peek(), '^')) {
+      p++;
+      var e = arg();
+      if (e.replace(/\s/g, '') === '-1' && has.call(INVERSE, fname)) fname = INVERSE[fname];
+      else if (pow === null) pow = e;
+      else fail('Hay dos exponentes seguidos en una función.');
+    }
+    var inside = parenInner(), parenthesized = inside !== null;
+    if (!parenthesized) {
+      if (!startsFactor(peek())) fail('A la función le falta el argumento.');
+      inside = factor();
+      // coeficiente numérico: sin 2x = sin(2*x)
+      if (/^[0-9]+(\.[0-9]+)?$/.test(inside) && startsFactor(peek()) && !startsFunction()) inside += '*' + factor();
+    }
+    if (!inside) fail('Hay un recuadro vacío: completalo o borralo.');
+    var out = base !== null ? 'log(' + inside + ',' + base + ')' : fname + '(' + inside + ')';
+    return pow !== null ? '(' + out + ')^' + wrap(pow) : out;
+  }
+
+  function startsFactor(tok) {
+    if (!tok) return false;
+    if (tok.t === 'num' || tok.t === 'let') return true;
+    if (tok.t === 'ch') return tok.v === '(' || tok.v === '{' || tok.v === '|' || tok.v === '.';
+    return !(tok.v === 'right' || tok.v === 'rvert' || tok.v === 'cdot' || tok.v === 'times' || tok.v === 'div' || tok.v === 'ast');
+  }
+
+  function startsFunction() {
+    var tok = peek();
+    if (!tok) return false;
+    if (tok.t === 'cmd') return has.call(FUNCS, tok.v) || tok.v === 'operatorname';
+    if (tok.t === 'let') {
+      var w = '', q = p;
+      while (toks[q] && toks[q].t === 'let') { w += toks[q].v; q++; }
+      for (var k = 0; k < WORDS.length; k++) if (w.indexOf(WORDS[k]) === 0) return true;
+    }
+    return false;
+  }
+
+  // Signo de relación: devuelve { text, shown } o null.
+  var REL_CMDS = { le: '<=', leq: '<=', leqslant: '<=', ge: '>=', geq: '>=', geqslant: '>=', lt: '<', gt: '>' };
+  function relationOf(tok) {
+    if (!tok) return null;
+    if (tok.t === 'ch') {
+      if (tok.v === '=') return { text: '=', shown: '=' };
+      if (tok.v === '<' || tok.v === '>') return { text: tok.v, shown: tok.v };
+      if (tok.v === '\u2264') return { text: '<=', shown: '≤' };
+      if (tok.v === '\u2265') return { text: '>=', shown: '≥' };
+    }
+    if (tok.t === 'cmd' && has.call(REL_CMDS, tok.v)) return { text: REL_CMDS[tok.v], shown: REL_CMDS[tok.v].replace('<=', '≤').replace('>=', '≥') };
+    return null;
+  }
+
+  // ---- Secuencia de factores y operadores (top: nivel superior, único lugar donde puede ir una relación)
+  function seq(stop, top) {
+    var out = '', prev = false, seenRel = false;
+    while (peek() && !stop(peek())) {
+      var tok = peek(), op = null;
+      var rel = relationOf(tok);
+      if (rel) {
+        if (!top || !opts.relation) {
+          if (rel.text === '=') fail(top ? 'No pongas «=»: escribí solo la función.' : 'El signo «=» va afuera de los paréntesis.');
+          fail(top ? 'Acá no se usan desigualdades: escribí solo la expresión.' : 'Las desigualdades van afuera de los paréntesis.');
+        }
+        if (seenRel) fail('Escribí una sola igualdad o desigualdad.');
+        if (!out) fail('Falta el primer miembro, antes de «' + rel.shown + '».');
+        if (/[+\-*/^]$/.test(out)) fail('Falta un número antes de «' + rel.shown + '».');
+        seenRel = true; out += rel.text; prev = false; p++; continue;
+      }
+      if (tok.t === 'ch' && (tok.v === '+' || tok.v === '-' || tok.v === '*' || tok.v === '/')) op = tok.v;
+      else if (tok.t === 'cmd' && (tok.v === 'cdot' || tok.v === 'times' || tok.v === 'ast')) op = '*';
+      else if (tok.t === 'cmd' && tok.v === 'div') op = '/';
+      else if (tok.t === 'cmd' && /^[,;:! ]$|^(quad|qquad|displaystyle|textstyle)$/.test(tok.v)) { p++; continue; }
+      else if (tok.t === 'ch' && (tok.v === ')' || tok.v === '}' || tok.v === ']')) fail('Hay un paréntesis de cierre de más.');
+      else if (isCmd(tok, 'right') || isCmd(tok, 'rvert')) fail('Hay un paréntesis de cierre de más.');
+
+      if (op !== null) { p++; out += op; prev = false; continue; }
+      var f = factor();
+      out += (prev ? '*' : '') + f;
+      prev = true;
+    }
+    return out;
+  }
+
+  try {
+    var text = seq(function () { return false; }, true);
+    if (p < toks.length) fail('No pude interpretar la expresión.');
+    if (!text.trim()) return { ok: false, error: 'El campo está vacío.' };
+    if (/[=<>]$/.test(text)) return { ok: false, error: 'Falta el segundo miembro, después del signo.' };
+    if (/[+\-*/^]$/.test(text)) return { ok: false, error: 'La expresión termina en un operador: falta un número o una variable.' };
+    return { ok: true, text: text };
+  } catch (err) {
+    if (err && err.user) return { ok: false, error: err.message };
+    return { ok: false, error: 'No pude interpretar la expresión.' };
+  }
+}
+</script>
+<script>
+(function () {
+  var D0 = { tex: '0', txt: '0' }, D1 = { tex: '1', txt: '1' }, DINF = { tex: '\\infty', txt: 'oo' };
+
+  // ---- Modos. Cada operación define sus etiquetas, opciones, ejemplos y teclas extra.
+  //  fx: etiqueta de la caja principal; ph: [placeholder del editor, del campo simple];
+  //  need: mensaje si está vacía; hint: ayuda corta; steps: puede traer paso a paso;
+  //  order / from / to / side: opciones visibles (bkey: mismas cotas entre modos que la comparten);
+  //  rel: acepta = < > ≤ ≥; noX: no hay variable x; extra: teclas extra.
+  var FX = 'f(x) =', NEED = 'Escribí una función de x para calcular.';
+  var MODES = {
+    diff: {
+      fx: FX, fxName: 'Función de x', ph: ['x^{2}\\sin x', 'x^2*sin(x)'], need: NEED, steps: true,
+      hint: 'Deriva respecto de x. Con «Orden» pedís la derivada segunda, tercera, etc.',
+      order: { key: 'diff', name: 'Orden', min: 1, max: 5, def: 1 }
+    },
+    int: {
+      fx: FX, fxName: 'Función de x', ph: ['x\\,e^{x}', 'x*e^x'], need: NEED, steps: true,
+      hint: 'Busca la primitiva y le suma la constante C.'
+    },
+    defint: {
+      fx: FX, fxName: 'Función de x', ph: ['e^{-x^{2}}', 'e^(-x^2)'], need: NEED, steps: true,
+      hint: 'Área bajo la curva entre dos límites. Los límites pueden ser −∞ o ∞.',
+      from: { bkey: 'int', name: 'Desde', label: 'Límite inferior', def: D0 },
+      to: { bkey: 'int', name: 'Hasta', label: 'Límite superior', def: D1 }
+    },
+    limit: {
+      fx: FX, fxName: 'Función de x', ph: ['\\frac{\\sin x}{x}', 'sin(x)/x'], need: NEED, steps: true,
+      hint: 'Valor al que se acerca f(x) cuando x se acerca a un punto. Si los lados dan distinto, no existe.',
+      from: { bkey: 'pt', name: 'x tiende a', label: 'Punto al que tiende x', def: D0 }, side: true
+    },
+    taylor: {
+      fx: FX, fxName: 'Función de x', ph: ['e^{x}', 'e^x'], need: NEED, steps: true,
+      hint: 'Polinomio de Taylor hasta el grado que elijas. Con centro 0 es el desarrollo de Maclaurin.',
+      order: { key: 'taylor', name: 'Grado', min: 1, max: 10, def: 5 },
+      from: { bkey: 'pt', name: 'Centrado en x =', label: 'Centro del desarrollo', def: D0 }
+    },
+    sum: {
+      fx: 'aₙ =', fxName: 'Término general, en n', ph: ['\\frac{1}{n^{2}}', '1/n^2'],
+      need: 'Escribí el término general de la suma, usando n.',
+      hint: 'Suma el término general para n entre los dos límites. La variable es n.',
+      from: { bkey: 'sum', name: 'Desde n =', label: 'Valor inicial de n', def: D1 },
+      to: { bkey: 'sum', name: 'Hasta n =', label: 'Valor final de n', def: DINF },
+      extra: 'sum', noX: true
+    },
+    simplify: {
+      fx: FX, fxName: 'Expresión', ph: ['\\frac{x^{2}-1}{x-1}', '(x^2-1)/(x-1)'], need: 'Escribí una expresión para simplificar.',
+      hint: 'Devuelve la forma más simple que encuentra.'
+    },
+    expand: {
+      fx: FX, fxName: 'Expresión', ph: ['\\left(x+1\\right)^{3}', '(x+1)^3'], need: 'Escribí una expresión para expandir.',
+      hint: 'Aplica la distributiva y desarrolla las potencias.'
+    },
+    factor: {
+      fx: FX, fxName: 'Expresión', ph: ['x^{3}-x', 'x^3-x'], need: 'Escribí una expresión para factorizar.',
+      hint: 'Factoriza con coeficientes racionales.'
+    },
+    apart: {
+      fx: FX, fxName: 'Cociente de polinomios', ph: ['\\frac{x+1}{x^{2}-1}', '(x+1)/(x^2-1)'],
+      need: 'Escribí un cociente de polinomios.',
+      hint: 'Descompone un cociente de polinomios en suma de fracciones más simples.'
+    },
+    solve: {
+      fx: 'resolver', fxName: 'Ecuación o desigualdad', ph: ['x^{2}-4=0', 'x^2-4=0'], need: 'Escribí una ecuación o una desigualdad.',
+      hint: 'Ecuaciones (=) y desigualdades (<, >, ≤, ≥) en x. Solo soluciones reales.',
+      steps: true, rel: true, extra: 'solve'
+    },
+    eval: {
+      fx: 'cuenta', fxName: 'Cuenta', ph: ['\\sqrt{2}+\\frac{1}{3}', 'sqrt(2)+1/3'], need: 'Escribí una cuenta para calcular.',
+      hint: 'Cuentas con números, sin variables. Los ángulos van en radianes.',
+      noX: true, extra: 'eval'
+    }
+  };
+
+  var EXAMPLES = {
+    diff: [
+      { verb: 'Derivar', tex: 'x^{2}\\sin\\left(x\\right)', txt: 'x^2*sin(x)' },
+      { verb: 'Derivar', tex: '\\frac{\\ln\\left(x\\right)}{x}', txt: 'ln(x)/x' },
+      { verb: 'Derivar', tex: '\\sqrt{x^{2}+1}', txt: 'sqrt(x^2+1)' }
+    ],
+    int: [
+      { verb: 'Integrar', tex: 'x\\,e^{x}', txt: 'x*e^x' },
+      { verb: 'Integrar', tex: '\\frac{1}{x^{2}+1}', txt: '1/(x^2+1)' },
+      { verb: 'Integrar', tex: '\\sin^{2}\\left(x\\right)', txt: 'sin(x)^2' }
+    ],
+    defint: [
+      { verb: 'Integrar', tex: 'e^{-x^{2}}', txt: 'e^(-x^2)', a: { tex: '-\\infty', txt: '-oo' }, b: DINF, tail: ' de −∞ a ∞' },
+      { verb: 'Integrar', tex: 'x^{2}', txt: 'x^2', a: D0, b: { tex: '3', txt: '3' }, tail: ' de 0 a 3' },
+      { verb: 'Integrar', tex: '\\sin\\left(x\\right)', txt: 'sin(x)', a: D0, b: { tex: '\\pi', txt: 'pi' }, tail: ' de 0 a π' }
+    ],
+    limit: [
+      { verb: 'Límite de', tex: '\\frac{\\sin x}{x}', txt: 'sin(x)/x', a: D0, tail: ' si x → 0' },
+      { verb: 'Límite de', tex: '\\frac{x^{2}-1}{x-1}', txt: '(x^2-1)/(x-1)', a: D1, tail: ' si x → 1' },
+      { verb: 'Límite de', tex: '\\left(1+\\frac{1}{x}\\right)^{x}', txt: '(1+1/x)^x', a: DINF, tail: ' si x → ∞' },
+      { verb: 'Límite de', tex: '\\frac{1}{x}', txt: '1/x', a: D0, side: '+', tail: ' si x → 0⁺' }
+    ],
+    taylor: [
+      { verb: 'Taylor de', tex: 'e^{x}', txt: 'e^x', a: D0, order: 5, tail: ', grado 5' },
+      { verb: 'Taylor de', tex: '\\sin x', txt: 'sin(x)', a: D0, order: 7, tail: ', grado 7' },
+      { verb: 'Taylor de', tex: '\\ln x', txt: 'ln(x)', a: D1, order: 4, tail: ' en x = 1, grado 4' }
+    ],
+    sum: [
+      { verb: 'Sumar', tex: '\\frac{1}{n^{2}}', txt: '1/n^2', a: D1, b: DINF, tail: ' de n = 1 a ∞' },
+      { verb: 'Sumar', tex: '\\frac{1}{2^{n}}', txt: '1/2^n', a: D0, b: DINF, tail: ' de n = 0 a ∞' },
+      { verb: 'Sumar', tex: 'n^{2}', txt: 'n^2', a: D1, b: { tex: '10', txt: '10' }, tail: ' de n = 1 a 10' }
+    ],
+    simplify: [
+      { verb: 'Simplificar', tex: '\\frac{x^{2}-1}{x-1}', txt: '(x^2-1)/(x-1)' },
+      { verb: 'Simplificar', tex: '\\sin^{2}x+\\cos^{2}x', txt: 'sin(x)^2+cos(x)^2' }
+    ],
+    expand: [
+      { verb: 'Expandir', tex: '\\left(x+1\\right)^{3}', txt: '(x+1)^3' },
+      { verb: 'Expandir', tex: '\\left(x-2\\right)\\left(x+3\\right)', txt: '(x-2)*(x+3)' }
+    ],
+    factor: [
+      { verb: 'Factorizar', tex: 'x^{3}-x', txt: 'x^3-x' },
+      { verb: 'Factorizar', tex: 'x^{4}-16', txt: 'x^4-16' }
+    ],
+    apart: [
+      { verb: 'Descomponer', tex: '\\frac{x+1}{x^{2}-1}', txt: '(x+1)/(x^2-1)' },
+      { verb: 'Descomponer', tex: '\\frac{1}{x\\left(x+1\\right)}', txt: '1/(x*(x+1))' }
+    ],
+    solve: [
+      { verb: 'Resolver', tex: 'x^{2}-5x+6=0', txt: 'x^2-5*x+6=0' },
+      { verb: 'Resolver', tex: '2x+3<7', txt: '2*x+3<7' },
+      { verb: 'Resolver', tex: '\\frac{x-1}{x+2}\\ge0', txt: '(x-1)/(x+2)>=0' },
+      { verb: 'Resolver', tex: '\\cos x=x', txt: 'cos(x)=x' }
+    ],
+    eval: [
+      { verb: 'Calcular', tex: '\\frac{1}{3}+\\frac{1}{4}', txt: '1/3+1/4' },
+      { verb: 'Calcular', tex: '\\sin\\left(\\frac{\\pi}{6}\\right)', txt: 'sin(pi/6)' },
+      { verb: 'Calcular', tex: '\\frac{5!}{2!\\cdot3!}', txt: '5!/(2!*3!)' }
+    ]
+  };
+
+  // Teclas extra, en una fila arriba del teclado, solo en los modos que las usan.
+  var EXTRA = {
+    solve: [
+      { l: '=', s: '=', a: 'igual' },
+      { l: '<', s: '<', a: 'menor que' },
+      { l: '>', s: '>', a: 'mayor que' },
+      { l: '≤', tex: '\\le', txt: '<=', a: 'menor o igual que' },
+      { l: '≥', tex: '\\ge', txt: '>=', a: 'mayor o igual que' }
+    ],
+    sum: [
+      { l: 'n', s: 'n', a: 'n, el índice de la suma' },
+      { l: 'n!', face: 'n!', s: '!', a: 'factorial' },
+      { l: '(−1)ⁿ', face: '(-1)^{n}', tex: '\\left(-1\\right)^{n}', txt: '(-1)^n', a: 'menos uno elevado a n' }
+    ],
+    eval: [
+      { l: 'n!', face: 'n!', s: '!', a: 'factorial' }
+    ]
+  };
+
+  // Teclas. l = texto de la tecla, face = cómo se dibuja con KaTeX, a = nombre accesible,
+  // c = clase, s = carácter que se escribe, sim = escribirlo como con el teclado (paréntesis),
+  // tex = plantilla que se inserta en el editor, txt = texto que se inserta en el campo simple,
+  // back = cuánto retroceder el cursor en el campo simple, act = acción especial.
+  function fn(name, a) {
+    return { l: name, face: '\\' + name, a: a, c: name.length > 4 ? 'fn long' : 'fn', tex: '\\' + name + '\\left(#?\\right)', txt: name + '()', back: 1 };
+  }
+  var KEYS = [
+    { l: 'a/b', face: '\\dfrac{a}{b}', a: 'fracción', c: 'fn', tex: '\\frac{#@}{#?}', txt: '()/()', back: 4 },
+    { l: 'xʸ', face: '\\square^{\\square}', a: 'potencia (exponente cualquiera)', c: 'fn', tex: '#@^{#?}', txt: '^()', back: 1 },
+    { l: 'x²', face: '\\square^{2}', a: 'al cuadrado', c: 'fn', tex: '#@^{2}', txt: '^2' },
+    { l: '√', face: '\\sqrt{\\square}', a: 'raíz cuadrada', c: 'fn', tex: '\\sqrt{#0}', txt: 'sqrt()', back: 1 },
+    { l: 'ⁿ√', face: '\\sqrt[n]{\\square}', a: 'raíz enésima', c: 'fn', tex: '\\sqrt[#?]{#0}', txt: '^(1/)', back: 1 },
+    { l: '|x|', face: '|x|', a: 'valor absoluto', c: 'fn', tex: '\\left|#0\\right|', txt: 'abs()', back: 1 },
+
+    { l: 'log', face: '\\log', a: 'logaritmo en base 10', c: 'fn', tex: '\\log\\left(#?\\right)', txt: 'log10()', back: 1 },
+    { l: 'ln', face: '\\ln', a: 'logaritmo natural', c: 'fn', tex: '\\ln\\left(#?\\right)', txt: 'ln()', back: 1 },
+    { l: 'logₐ', face: '\\log_{a}', a: 'logaritmo en base a', c: 'fn', tex: '\\log_{#?}\\left(#?\\right)', txt: 'log(,)', back: 2 },
+    { l: 'eˣ', face: 'e^{x}', a: 'e elevado a x', c: 'fn', tex: 'e^{#?}', txt: 'e^()', back: 1 },
+    { l: 'e', face: 'e', a: 'número e', s: 'e' },
+    { l: 'π', face: '\\pi', a: 'pi', tex: '\\pi', txt: 'pi' },
+
+    fn('sin', 'seno'), fn('cos', 'coseno'), fn('tan', 'tangente'),
+    fn('cot', 'cotangente'), fn('sec', 'secante'), fn('csc', 'cosecante'),
+    fn('arcsin', 'arco seno'), fn('arccos', 'arco coseno'), fn('arctan', 'arco tangente'),
+    fn('sinh', 'seno hiperbólico'), fn('cosh', 'coseno hiperbólico'), fn('tanh', 'tangente hiperbólica'),
+
+    { l: '7', s: '7' }, { l: '8', s: '8' }, { l: '9', s: '9' },
+    { c: 'op', l: '(', s: '(', sim: true, a: 'abrir paréntesis' }, { c: 'op', l: ')', s: ')', sim: true, a: 'cerrar paréntesis' },
+    { l: '⌫', act: 'back', c: 'ctl', a: 'borrar', svg: '<path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z"/><path d="m12.5 9.5 5 5m0-5-5 5"/>' },
+    { l: '4', s: '4' }, { l: '5', s: '5' }, { l: '6', s: '6' },
+    { c: 'op', l: '×', tex: '\\cdot', txt: '*', a: 'multiplicar' }, { c: 'op', l: '+', s: '+', a: 'sumar' },
+    { c: 'op', l: '−', s: '-', a: 'restar' },
+    { l: '1', s: '1' }, { l: '2', s: '2' }, { l: '3', s: '3' },
+    { l: '▴', act: 'up', txt: '^()', back: 1, a: 'exponente (flecha arriba)', svg: '<path class="solid" d="M5 15h14L12 6z"/>' },
+    { l: '◂', act: 'left', a: 'mover el cursor a la izquierda', svg: '<path class="solid" d="M15 5v14L6 12z"/>' },
+    { l: '▸', act: 'right', a: 'mover el cursor a la derecha, para salir de un exponente o una fracción', svg: '<path class="solid" d="M9 5v14l9-7z"/>' },
+    { l: '0', s: '0' }, { c: 'op', l: '.', s: '.', a: 'punto decimal' }, { l: 'x', face: 'x', s: 'x', a: 'x', isX: true },
+    { l: '∞', face: '\\infty', a: 'infinito', tex: '\\infty', txt: 'oo' },
+    { l: 'C', act: 'clear', c: 'ctl', a: 'borrar todo el campo' },
+    { l: '↵', act: 'enter', c: 'enter', a: 'calcular', svg: '<path d="M20 5v6a4 4 0 0 1-4 4H5"/><path d="m9 11-4 4 4 4"/>' }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('calc'), order = $('order'), sideSel = $('side');
+  var go = $('go'), result = $('result'), mathIn = $('math-in'), mathOut = $('math-out');
+  var err = $('err'), note = $('note'), copy = $('copy');
+  var steps = $('steps'), stepsList = $('steps-list'), stepsNote = $('steps-note');
+  var pad = $('pad'), keys = $('keys');
+  var copyText = '';
+  var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  var editor = false;      // true cuando el editor matemático está activo
+  var mode = 'diff';
+  var lastBounds = null, lastOrder = null;   // para saber cuándo hay que volver a los valores por defecto
+
+  function currentOp() { return form.elements.op.value; }
+
+  // ---- Campos: cada uno es un <input> de texto que se reemplaza por un editor matemático si carga.
+  function Field(input) {
+    this.input = input;
+    this.mf = null;
+    this.el = input;
+  }
+  Field.prototype.upgrade = function () {
+    var mf = document.createElement('math-field');
+    var self = this;
+    mf.setAttribute('aria-label', this.input.getAttribute('aria-label') || 'Expresión');
+    mf.setAttribute('math-virtual-keyboard-policy', 'manual');
+    mf.setAttribute('tabindex', '0');
+    try { mf.menuItems = []; } catch (e) { /* sin menú contextual */ }
+    mf.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); form.requestSubmit(); }
+    });
+    mf.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowUp' && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        goUp(mf);
+      }
+    }, true);
+    var start = this.input.value.trim();
+    this.input.hidden = true;
+    this.input.insertAdjacentElement('beforebegin', mf);
+    if (start) {
+      try { mf.setValue(start, { format: 'ascii-math' }); } catch (e) { /* queda vacío */ }
+    }
+    this.mf = mf;
+    this.el = mf;
+    var label = this.input.closest('label');
+    if (label) label.addEventListener('click', function (e) { if (e.target === label) self.focus(); });
+  };
+  Field.prototype.focus = function () {
+    (this.mf || this.input).focus();
+  };
+  Field.prototype.isEmpty = function () {
+    return this.mf ? !this.mf.value.trim() : !this.input.value.trim();
+  };
+  // Devuelve { ok, text } o { ok: false, error }.
+  Field.prototype.read = function (opts) {
+    if (this.mf) return texToAscii(this.mf.value, opts);
+    var t = this.input.value.trim();
+    return t ? { ok: true, text: t } : { ok: false, error: 'El campo está vacío.' };
+  };
+  Field.prototype.fill = function (v) {
+    if (this.mf) this.mf.value = v.tex; else this.input.value = v.txt;
+  };
+  Field.prototype.setLabel = function (t) {
+    this.input.setAttribute('aria-label', t);
+    if (this.mf) this.mf.setAttribute('aria-label', t);
+  };
+  Field.prototype.setPlaceholder = function (ph) {
+    this.input.placeholder = ph[1];
+    if (this.mf) this.mf.setAttribute('placeholder', ph[0]);
+  };
+  // LaTeX de lo que está escrito, para mostrarlo como entrada cuando el servidor no lo devuelve.
+  Field.prototype.tex = function () {
+    if (this.mf) return this.mf.value;
+    return '\\texttt{' + this.input.value.replace(/[\\{}^_%#&$~]/g, function (c) { return '\\char`\\' + c; }) + '}';
+  };
+
+  var F = { expr: new Field($('expr')), from: new Field($('from')), to: new Field($('to')) };
+  var active = F.expr;
+  Object.keys(F).forEach(function (k) {
+    F[k].input.addEventListener('focus', function () { active = F[k]; });
+  });
+
+  // ---- Modo: ajusta etiquetas, opciones, teclas y ejemplos según la operación.
+  function setOptName(id, text) { $(id).textContent = text; }
+
+  function applyMode(op) {
+    var m = MODES[op];
+    mode = op;
+    $('fx-label').textContent = m.fx;
+    F.expr.setLabel(m.fxName);
+    F.expr.setPlaceholder(m.ph);
+    $('mode-hint').textContent = m.hint;
+
+    $('order-wrap').hidden = !m.order;
+    if (m.order) {
+      setOptName('order-name', m.order.name);
+      order.min = m.order.min; order.max = m.order.max;
+      if (lastOrder !== m.order.key) { order.value = m.order.def; lastOrder = m.order.key; }
+    }
+    $('from-wrap').hidden = !m.from;
+    $('to-wrap').hidden = !m.to;
+    $('side-wrap').hidden = !m.side;
+    ['from', 'to'].forEach(function (k) {
+      var spec = m[k];
+      if (!spec) return;
+      setOptName(k + '-name', spec.name);
+      F[k].setLabel(spec.label);
+    });
+    var bk = (m.from || m.to || {}).bkey;
+    if (bk && bk !== lastBounds) {
+      if (m.from) F.from.fill(m.from.def);
+      if (m.to) F.to.fill(m.to.def);
+      lastBounds = bk;
+    }
+    $('opts').hidden = !(m.order || m.from || m.to || m.side);
+    buildKeys();
+    buildChips();
+  }
+
+  form.addEventListener('change', function (e) {
+    if (e.target.name === 'op') applyMode(currentOp());
+  });
+
+  // ---- Teclado
+  keys.addEventListener('mousedown', function (e) { e.preventDefault(); });
+
+  // Flecha arriba: exponente de lo que está a la izquierda. Si no hay nada (al principio de un
+  // paréntesis, de un denominador, etc.), sube de nivel como siempre.
+  function goUp(mf) {
+    var before = mf.value;
+    mf.executeCommand('moveToSuperscript');
+    var after = mf.value, i = 0;
+    while (i < before.length && before.charAt(i) === after.charAt(i)) i++;
+    var left = after.slice(0, i);
+    var created = after.substr(i, 3) === '^{}';
+    var noBase = created && (!left || /[{(\[]$|\\placeholder\{\}$|[-+=]$|\\(cdot|times|div)$/.test(left));
+    if (noBase) {
+      mf.executeCommand('deleteBackward');
+      mf.executeCommand('moveUp');
+    }
+  }
+
+  function pressEditor(mf, key) {
+    if (!mf.hasFocus()) mf.focus();
+    if (key.act === 'back') mf.executeCommand('deleteBackward');
+    else if (key.act === 'clear') mf.executeCommand('deleteAll');
+    else if (key.act === 'left') mf.executeCommand('moveToPreviousChar');
+    else if (key.act === 'right') mf.executeCommand('moveToNextChar');
+    else if (key.act === 'up') goUp(mf);
+    else if (key.tex) mf.insert(key.tex);
+    else if (key.sim) mf.executeCommand(['typedText', key.s, { simulateKeystroke: true }]);
+    else mf.executeCommand(['typedText', key.s]);
+  }
+
+  function pressText(el, key) {
+    var v = el.value, s = el.selectionStart, e = el.selectionEnd, pos;
+    if (s === null || s === undefined) { s = e = v.length; }
+    if (key.act === 'clear') {
+      el.value = ''; pos = 0;
+    } else if (key.act === 'back') {
+      if (s === e && s > 0) s -= 1;
+      el.value = v.slice(0, s) + v.slice(e); pos = s;
+    } else if (key.act === 'left') {
+      pos = Math.max(0, s - 1);
+    } else if (key.act === 'right') {
+      pos = Math.min(v.length, e + 1);
+    } else {
+      var ins = key.txt !== undefined ? key.txt : (key.s !== undefined ? key.s : key.l);
+      el.value = v.slice(0, s) + ins + v.slice(e);
+      pos = s + ins.length - (key.back || 0);
+    }
+    var ae = document.activeElement;
+    if (!(ae && ae.classList && ae.classList.contains('key'))) el.focus({ preventScroll: true });
+    el.setSelectionRange(pos, pos);
+  }
+
+  // Campo que tiene el foco en este momento (el último que lo tuvo, si el foco se perdió).
+  function current() {
+    var all = [F.expr, F.from, F.to];
+    for (var i = 0; i < all.length; i++) {
+      var f = all[i];
+      if (f.mf ? f.mf.hasFocus() : document.activeElement === f.input) return f;
+    }
+    return active;
+  }
+
+  function press(key) {
+    if (key.act === 'enter') { form.requestSubmit(); return; }
+    var f = current();
+    active = f;
+    if (f.mf) pressEditor(f.mf, key); else pressText(f.input, key);
+  }
+
+  function buildKeys() {
+    var m = MODES[mode];
+    keys.textContent = '';
+    var extras = m.extra ? EXTRA[m.extra] : [];
+    // Las teclas extra ocupan filas completas: el resto del teclado queda siempre en el mismo lugar.
+    var span = extras.length > 1 && 6 % extras.length === 0 ? 6 / extras.length : 1;
+    var list = extras.map(function (k) {
+      return Object.assign({}, k, { c: 'extra', span: span });
+    });
+    var gap = extras.length ? (6 - (extras.length * span) % 6) % 6 : 0;
+    for (var g = 0; g < gap; g++) list.push({ gap: true });
+    list = list.concat(KEYS);
+    list.forEach(function (key) {
+      if (key.gap) {
+        var s = document.createElement('span');
+        s.setAttribute('aria-hidden', 'true');
+        keys.append(s);
+        return;
+      }
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'key' + (key.c ? ' ' + key.c : '');
+      b.setAttribute('aria-label', key.a || key.l);
+      var rendered = false;
+      if (key.svg) {
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + key.svg + '</svg>';
+      } else if (key.face && window.katex) {
+        try { window.katex.render(key.face, b, { throwOnError: true }); rendered = true; }
+        catch (e) { b.textContent = key.l; }
+      } else {
+        b.textContent = key.l;
+      }
+      if (!rendered && /\bfn\b/.test(key.c || '')) b.classList.add('plain');
+      if (key.isX && m.noX) { b.disabled = true; b.setAttribute('aria-label', 'x (no se usa en este modo)'); }
+      if (key.span > 1) b.style.gridColumn = 'span ' + key.span;
+      b.addEventListener('click', function () { press(key); });
+      keys.append(b);
+    });
+  }
+
+  // ---- Ejemplos del modo elegido
+  function buildChips() {
+    var chips = $('chips');
+    chips.textContent = '';
+    (EXAMPLES[mode] || []).forEach(function (ex) {
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.append(ex.verb);
+      var shown = document.createElement('span');
+      var ok = false;
+      if (window.katex) {
+        try { window.katex.render(ex.tex, shown, { throwOnError: true }); ok = true; } catch (e) { ok = false; }
+      }
+      if (!ok) {
+        shown = document.createElement('code');
+        shown.textContent = ex.txt;
+      }
+      b.append(shown);
+      if (ex.tail) b.append(ex.tail);
+      b.addEventListener('click', function () {
+        F.expr.fill(ex);
+        if (ex.a) F.from.fill(ex.a);
+        if (ex.b) F.to.fill(ex.b);
+        if (ex.order) order.value = ex.order;
+        sideSel.value = ex.side || 'both';
+        form.requestSubmit();
+      });
+      li.append(b);
+      chips.append(li);
+    });
+  }
+
+  // ---- Arranque: cuando terminan de cargar KaTeX y el editor (o fallaron), se arma todo.
+  function start() {
+    var fields = [F.expr, F.from, F.to];
+    if (window.customElements && customElements.get('math-field') && window.MathfieldElement) {
+      try {
+        var ME = window.MathfieldElement;
+        ME.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive@0.110.0/fonts';
+        ME.soundsDirectory = null;
+        fields.forEach(function (f) { f.upgrade(); });
+        editor = true;
+        // Que escribir `log(x)` con el teclado no abra una base vacía, y que `sen` y `tg` funcionen.
+        var extra = {
+          log: '\\log', sen: '\\sin', tg: '\\tan', ctg: '\\cot', cosec: '\\csc',
+          arcsen: '\\arcsin', arctg: '\\arctan', senh: '\\sinh', tgh: '\\tanh'
+        };
+        fields.forEach(function (f) {
+          f.mf.inlineShortcuts = Object.assign({}, f.mf.inlineShortcuts, extra);
+          f.mf.addEventListener('focusin', function () { active = f; });
+        });
+      } catch (e) {
+        editor = false;
+        fields.forEach(function (f) {
+          if (f.mf) { f.mf.remove(); f.mf = null; f.el = f.input; f.input.hidden = false; }
+        });
+      }
+    }
+    $('help-text').hidden = editor;
+    $('pad-hint').hidden = !editor;
+    if (!editor) {
+      fields.forEach(function (f) {
+        f.input.setAttribute('inputmode', coarse && pad.open ? 'none' : 'text');
+      });
+    }
+    applyMode(currentOp());
+  }
+
+  pad.addEventListener('toggle', function () {
+    // Con el editor, el teclado del sistema nunca aparece: el panel tiene que quedar abierto.
+    if (editor && coarse && !pad.open) { pad.open = true; return; }
+    if (!editor) {
+      [F.expr, F.from, F.to].forEach(function (f) {
+        f.input.setAttribute('inputmode', coarse && pad.open ? 'none' : 'text');
+      });
+    }
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+
+  // ---- Resultado
+  function render(el, tex, fallback) {
+    if (window.katex) {
+      try { window.katex.render(tex, el, { displayMode: true, throwOnError: false }); return; }
+      catch (e) { /* cae al texto plano */ }
+    }
+    el.textContent = fallback;
+  }
+
+  // Parte un resultado largo en sus términos (suma y resta de más afuera) para poder cortarlo en renglones.
+  function splitTerms(tex) {
+    var parts = [], depth = 0, start = 0, i = 0, prev = '';
+    while (i < tex.length) {
+      var c = tex.charAt(i);
+      if (tex.substr(i, 5) === '\\left') { depth++; i += 5; prev = 'x'; continue; }
+      if (tex.substr(i, 6) === '\\right') { depth--; i += 6; prev = 'x'; continue; }
+      if (c === '\\' && /[{}]/.test(tex.charAt(i + 1))) { i += 2; prev = 'x'; continue; }
+      if (c === '{') depth++;
+      else if (c === '}') depth--;
+      else if (depth === 0 && (c === '+' || c === '-') && prev && !/[+\-=<>(,\[&{|]/.test(prev)) {
+        parts.push(tex.slice(start, i));
+        start = i;
+      }
+      if (c !== ' ') prev = c;
+      i++;
+    }
+    parts.push(tex.slice(start));
+    return parts.map(function (p) {
+      p = p.trim();
+      var sign = /^[+-]/.test(p) ? p.charAt(0) : '';
+      return { sign: sign, body: sign ? p.slice(1).trim() : p };
+    }).filter(function (t) { return t.body; });
+  }
+
+  // Resultado principal. Si no entra en el ancho de la pantalla, se corta en renglones alineados.
+  var lastOut = null;
+  function renderResult(lead, tex, fallback) {
+    lastOut = { lead: lead, tex: tex, fallback: fallback };
+    render(mathOut, lead + ' ' + tex, fallback);
+    if (!window.katex || mathOut.scrollWidth <= mathOut.clientWidth + 1) return;
+    var terms = splitTerms(tex);
+    if (terms.length < 3) return;
+    var probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;left:0;top:0';
+    mathOut.append(probe);
+    function width(t) {
+      try { window.katex.render(t, probe, { throwOnError: false }); } catch (e) { return 0; }
+      return probe.getBoundingClientRect().width;
+    }
+    var widths = terms.map(function (t, k) { return width((k ? '{}' + (t.sign || '+') : t.sign) + t.body); });
+    var leadW = width(lead);
+    probe.remove();
+    // Se prueba con renglones cada vez más cortos hasta que el resultado entre en el ancho disponible.
+    for (var factor = 0.92; factor >= 0.45; factor -= 0.1) {
+      var avail = mathOut.clientWidth * factor - leadW;
+      var lines = [[]], used = 0;
+      terms.forEach(function (t, k) {
+        var cur = lines[lines.length - 1];
+        if (cur.length && used + widths[k] > avail) { cur = []; lines.push(cur); used = 0; }
+        cur.push(t);
+        used += widths[k];
+      });
+      if (lines.length < 2) return;
+      var body = lines.map(function (ln, n) {
+        return ln.map(function (t, k) {
+          if (n === 0 && k === 0) return (t.sign === '-' ? '-' : '') + t.body;
+          return '{}' + (t.sign || '+') + ' ' + t.body;
+        }).join(' ');
+      }).join(' \\\\ & \\, ');
+      render(mathOut, '\\begin{aligned}' + lead + ' & \\, ' + body + '\\end{aligned}', fallback);
+      if (mathOut.scrollWidth <= mathOut.clientWidth + 1) return;
+    }
+  }
+
+  function renderSteps(list) {
+    stepsList.textContent = '';
+    list.forEach(function (s) {
+      var li = document.createElement('li');
+      li.className = 'step' + (s.depth === 0 ? ' top' : '');
+      li.style.setProperty('--depth', s.depth);
+      var p = document.createElement('p');
+      p.className = 'step-text';
+      p.textContent = s.text;
+      li.append(p);
+      if (s.latex) {
+        var m = document.createElement('div');
+        m.className = 'step-math';
+        render(m, s.latex, s.latex);
+        li.append(m);
+      }
+      stepsList.append(li);
+    });
+  }
+
+  function reveal() {
+    result.hidden = false;
+    result.classList.remove('fresh');
+    void result.offsetWidth;
+    result.classList.add('fresh');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    result.scrollIntoView({ block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
+  }
+
+  function showError(msg) {
+    mathIn.hidden = true; mathOut.hidden = true;
+    note.hidden = true; copy.hidden = true;
+    steps.hidden = true; stepsNote.hidden = true;
+    err.hidden = false; err.textContent = msg;
+    reveal();
+  }
+
+  function showResult(d, op, sentTex) {
+    result.hidden = false;   // visible antes de medir el ancho del resultado
+    err.hidden = true;
+    mathIn.hidden = false; mathOut.hidden = false;
+    var inTex = d.input_latex || sentTex;
+    render(mathIn, inTex, inTex);
+    var lead = d.lead != null ? d.lead : (d.approx ? '\\approx' : '=');
+    renderResult(lead, d.result_latex, lead.replace('\\approx', '≈') + ' ' + d.result_text);
+
+    var parts = [];
+    if (d.note) parts.push(d.note);
+    else if (d.approx && op === 'defint') parts.push('No hay una primitiva en forma cerrada para esta función: el valor es una aproximación numérica.');
+    if (d.numeric && !/^-?\d+(\.\d+)?$/.test(d.result_text)) parts.push('Valor aproximado: ' + d.numeric);
+    note.hidden = !parts.length;
+    note.textContent = parts.join(' ');
+
+    copyText = d.result_text;
+    copy.hidden = false;
+    copy.textContent = 'Copiar resultado';
+
+    steps.open = false;
+    if (d.steps && d.steps.length) {
+      renderSteps(d.steps);
+      steps.hidden = false;
+      stepsNote.hidden = true;
+    } else {
+      steps.hidden = true;
+      stepsList.textContent = '';
+      var expects = !!MODES[op].steps && !d.approx;
+      stepsNote.hidden = !expects;
+      stepsNote.textContent = expects ? 'No hay paso a paso disponible para esta expresión.' : '';
+    }
+    reveal();
+  }
+
+  // Lee un campo; si falla, muestra el error y deja el foco ahí.
+  function read(field, emptyMsg, name, opts) {
+    if (field.isEmpty()) { showError(emptyMsg); field.focus(); return null; }
+    var r = field.read(opts);
+    if (!r.ok) { showError((name ? name + ': ' : '') + r.error); field.focus(); return null; }
+    return r.text;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var op = currentOp(), m = MODES[op];
+    var text = read(F.expr, m.need, '', { relation: !!m.rel });
+    if (text === null) return;
+    var a = '', b = '';
+    if (m.from) {
+      if (op === 'taylor' && F.from.isEmpty()) {
+        a = '0';
+      } else {
+        a = read(F.from, 'Falta ' + (op === 'limit' ? 'el punto al que tiende x.' : op === 'taylor' ? 'el centro.' : 'el valor inicial.'), m.from.label);
+        if (a === null) return;
+      }
+    }
+    if (m.to) {
+      b = read(F.to, 'Falta el valor final.', m.to.label);
+      if (b === null) return;
+    }
+    var sentTex = F.expr.tex();
+
+    go.disabled = true;
+    go.textContent = 'Calculando…';
+
+    fetch('/api/calc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: op, expr: text, a: a, b: b, order: order.value, side: sideSel.value }),
+      signal: AbortSignal.timeout(20000)
+    })
+      .then(function (res) {
+        return res.json().catch(function () {
+          return { ok: false, error: 'El servidor tardó demasiado o falló. Probá con una expresión más simple.' };
+        });
+      })
+      .then(function (d) { d.ok ? showResult(d, op, sentTex) : showError(d.error || 'No pude resolver esta expresión.'); })
+      .catch(function () { showError('No pude conectar con el servidor. Revisá tu conexión e intentá de nuevo.'); })
+      .finally(function () { go.disabled = false; go.textContent = 'Calcular'; });
+  });
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      if (lastOut && !result.hidden && !mathOut.hidden) renderResult(lastOut.lead, lastOut.tex, lastOut.fallback);
+    }, 200);
+  });
+
+  copy.addEventListener('click', function () {
+    var done = function () {
+      copy.textContent = 'Copiado';
+      setTimeout(function () { copy.textContent = 'Copiar resultado'; }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(copyText).then(done, function () {});
+    }
+  });
+})();
+</script>
+</body>
+</html>
